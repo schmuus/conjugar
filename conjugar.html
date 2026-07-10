@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Conjugar">
+<title>Conjugar — Spanisch Verben lernen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #16324F;
+    --bg-deep: #102539;
+    --panel: #FAF3E4;
+    --panel-line: #E4D9BF;
+    --cream: #F5EFDF;
+    --cream-dim: #C9D3DC;
+    --mustard: #E8A33D;
+    --sage: #7FA694;
+    --mauve: #C97B84;
+    --coral: #C4483A;
+    --line-on-dark: rgba(245,239,223,0.16);
+    --shadow: 0 12px 30px rgba(9,20,32,0.35);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(232,163,61,0.10), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(127,166,148,0.10), transparent 40%),
+      var(--bg);
+    color:var(--cream);
+    font-family:'Inter', -apple-system, sans-serif;
+    min-height:100dvh;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .app{max-width:560px; margin:0 auto; padding:0 18px 40px;}
+
+  /* Header */
+  header.top{
+    padding:28px 4px 12px;
+    position:sticky; top:0; z-index:5;
+    background:linear-gradient(var(--bg) 82%, transparent);
+    padding-top:calc(env(safe-area-inset-top) + 20px);
+  }
+  .brand h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:32px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--mustard);
+    margin-top:2px;
+  }
+
+  .tense-settings{
+    display:flex; gap:18px; margin-top:16px;
+  }
+  .tense-toggle{
+    display:flex; align-items:center; gap:8px;
+    font-size:12px; color:var(--cream-dim);
+  }
+  .switch{
+    width:42px; height:24px; border-radius:20px;
+    background:rgba(245,239,223,0.14);
+    position:relative; cursor:pointer;
+    border:1px solid var(--line-on-dark);
+    transition:background .2s;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:''; position:absolute; top:2px; left:2px;
+    width:18px; height:18px; border-radius:50%;
+    background:var(--cream);
+    transition:transform .2s cubic-bezier(.4,0,.2,1);
+  }
+  .switch.on{background:var(--sage); border-color:var(--sage);}
+  .switch.on::after{transform:translateX(18px);}
+  .switch.on.future{background:var(--mauve); border-color:var(--mauve);}
+
+  /* Verb grid (tile wall) */
+  .grid-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--cream-dim); margin:22px 2px 10px;
+  }
+  .tilewall{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+  }
+  .tile{
+    aspect-ratio:1;
+    background:var(--panel);
+    border-radius:6px;
+    position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    border:1px solid var(--panel-line);
+    padding:6px;
+    text-align:center;
+    transition:transform .15s, box-shadow .15s;
+  }
+  .tile:active{transform:scale(0.94);}
+  .tile .corner{
+    position:absolute; top:0; left:0;
+    width:0; height:0;
+    border-style:solid;
+    border-width:16px 16px 0 0;
+  }
+  .tile.type-ar .corner{border-color:var(--mustard) transparent transparent transparent;}
+  .tile.type-er .corner{border-color:var(--sage) transparent transparent transparent;}
+  .tile.type-ir .corner{border-color:var(--mauve) transparent transparent transparent;}
+  .tile.type-irr .corner{border-color:var(--coral) transparent transparent transparent;}
+  .tile .inf{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--bg-deep);
+    line-height:1.15;
+  }
+  .tile .meaning{
+    font-size:10px;
+    color:#6b5c42;
+    margin-top:3px;
+  }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:12px;
+    margin:14px 2px 0;
+    font-size:11px; color:var(--cream-dim);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:9px; height:9px; border-radius:2px; display:inline-block;}
+
+  /* Detail sheet */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(9,20,32,0.55);
+    opacity:0; pointer-events:none; transition:opacity .25s;
+    z-index:10;
+  }
+  .sheet-backdrop.show{opacity:1; pointer-events:auto;}
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0;
+    max-width:560px; margin:0 auto;
+    background:var(--bg-deep);
+    border-radius:20px 20px 0 0;
+    border-top:1px solid var(--line-on-dark);
+    box-shadow:var(--shadow);
+    transform:translateY(100%);
+    transition:transform .32s cubic-bezier(.32,.72,0,1);
+    z-index:11;
+    max-height:88dvh;
+    display:flex; flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .sheet.show{transform:translateY(0);}
+  .sheet-handle{
+    width:36px; height:4px; border-radius:3px;
+    background:rgba(245,239,223,0.25);
+    margin:10px auto 4px;
+    flex-shrink:0;
+  }
+  .sheet-head{
+    padding:10px 22px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line-on-dark);
+    flex-shrink:0;
+  }
+  .sheet-head .inf{
+    font-family:'Fraunces', serif; font-weight:600; font-size:24px;
+  }
+  .sheet-head .meaning{font-size:12px; color:var(--cream-dim); margin-top:2px;}
+  .close-btn{
+    width:32px; height:32px; border-radius:50%;
+    background:rgba(245,239,223,0.1);
+    border:none; color:var(--cream);
+    font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .tabs{
+    display:flex; gap:6px; padding:14px 22px 0; flex-shrink:0;
+  }
+  .tab-btn{
+    flex:1; padding:9px 0; text-align:center;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:none; border:1px solid var(--line-on-dark); color:var(--cream-dim);
+    border-radius:8px; cursor:pointer; transition:all .15s;
+  }
+  .tab-btn.active{background:var(--mustard); border-color:var(--mustard); color:var(--bg-deep); font-weight:600;}
+
+  .sheet-body{padding:18px 22px 26px; overflow-y:auto;}
+
+  /* Table view (mosaic) */
+  .tense-block{margin-bottom:22px;}
+  .tense-title{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--mustard); margin-bottom:8px;
+  }
+  .mosaic{
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:var(--line-on-dark);
+    border:1px solid var(--line-on-dark);
+    border-radius:8px; overflow:hidden;
+  }
+  .mosaic .cell{
+    background:var(--bg-deep); padding:11px 12px;
+  }
+  .mosaic .cell .pron{font-size:10px; color:var(--cream-dim); margin-bottom:3px;}
+  .mosaic .cell .form{font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:500;}
+
+  /* Quiz view */
+  .quiz-progress{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:16px; font-size:12px; color:var(--cream-dim);
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .quiz-card{
+    background:rgba(245,239,223,0.05);
+    border:1px solid var(--line-on-dark);
+    border-radius:14px;
+    padding:26px 20px;
+    text-align:center;
+  }
+  .quiz-tense{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--mustard); margin-bottom:10px;
+  }
+  .quiz-prompt{
+    font-family:'Fraunces', serif; font-size:22px; font-weight:600;
+  }
+  .quiz-prompt .pron{color:var(--sage);}
+  .quiz-input-row{
+    margin-top:20px; display:flex; gap:8px;
+  }
+  .quiz-input-row input{
+    flex:1; font-family:'IBM Plex Mono', monospace; font-size:16px;
+    background:var(--bg); border:1.5px solid var(--line-on-dark);
+    border-radius:9px; padding:12px 14px; color:var(--cream);
+    outline:none;
+  }
+  .quiz-input-row input:focus{border-color:var(--mustard);}
+  .quiz-input-row input.correct{border-color:var(--sage); background:rgba(127,166,148,0.12);}
+  .quiz-input-row input.wrong{border-color:var(--coral); background:rgba(196,72,58,0.12);}
+  .btn{
+    font-family:'Inter', sans-serif; font-weight:600; font-size:14px;
+    border:none; border-radius:9px; padding:12px 18px;
+    cursor:pointer; transition:opacity .15s;
+  }
+  .btn:active{opacity:0.7;}
+  .btn-primary{background:var(--mustard); color:var(--bg-deep);}
+  .btn-ghost{background:rgba(245,239,223,0.1); color:var(--cream);}
+  .feedback{
+    margin-top:14px; font-size:13px; min-height:20px;
+  }
+  .feedback.correct{color:var(--sage);}
+  .feedback.wrong{color:var(--coral);}
+  .feedback .note{color:var(--cream-dim); font-size:11px; display:block; margin-top:2px;}
+  .quiz-actions{margin-top:18px; display:flex; justify-content:center;}
+
+  .quiz-summary{text-align:center; padding:30px 10px;}
+  .quiz-summary .score{
+    font-family:'Fraunces', serif; font-size:44px; font-weight:700; color:var(--mustard);
+  }
+  .quiz-summary .label{color:var(--cream-dim); font-size:13px; margin-top:6px;}
+  .quiz-summary .actions{display:flex; gap:10px; justify-content:center; margin-top:24px;}
+
+  ::selection{background:var(--mustard); color:var(--bg-deep);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Conjugar</h1>
+      <div class="tag">36 Verben · Fliese für Fliese</div>
+    </div>
+    <div class="tense-settings">
+      <div class="tense-toggle">
+        <span id="pastLabel">+ Vergangenheit</span>
+        <div class="switch" id="pastSwitch" onclick="toggleTense('preterito')"></div>
+      </div>
+      <div class="tense-toggle">
+        <span id="futureLabel">+ Zukunft</span>
+        <div class="switch" id="futureSwitch" onclick="toggleTense('futuro')"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid-label">Verben</div>
+  <div class="tilewall" id="tilewall"></div>
+
+  <div class="legend">
+    <span><i style="background:var(--mustard)"></i>-ar</span>
+    <span><i style="background:var(--sage)"></i>-er</span>
+    <span><i style="background:var(--mauve)"></i>-ir</span>
+    <span><i style="background:var(--coral)"></i>unregelmäßig</span>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="backdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div>
+      <div class="inf" id="sheetInf"></div>
+      <div class="meaning" id="sheetMeaning"></div>
+    </div>
+    <button class="close-btn" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabTable" onclick="switchTab('table')">Tabelle</button>
+    <button class="tab-btn" id="tabQuiz" onclick="switchTab('quiz')">Test</button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<script>
+const PRONOUNS = ['yo','tú','él / ella / usted','nosotros','vosotros','ellos / ellas / ustedes'];
+const TENSE_LABEL = {
+  presente: 'Presente',
+  preterito: 'Pretérito · Vergangenheit',
+  futuro: 'Futuro · Zukunft'
+};
+
+const VERBS = [
+  {inf:'hablar', meaning:'sprechen', type:'ar',
+    presente:['hablo','hablas','habla','hablamos','habláis','hablan'],
+    preterito:['hablé','hablaste','habló','hablamos','hablasteis','hablaron'],
+    futuro:['hablaré','hablarás','hablará','hablaremos','hablaréis','hablarán']},
+  {inf:'trabajar', meaning:'arbeiten', type:'ar',
+    presente:['trabajo','trabajas','trabaja','trabajamos','trabajáis','trabajan'],
+    preterito:['trabajé','trabajaste','trabajó','trabajamos','trabajasteis','trabajaron'],
+    futuro:['trabajaré','trabajarás','trabajará','trabajaremos','trabajaréis','trabajarán']},
+  {inf:'estudiar', meaning:'lernen, studieren', type:'ar',
+    presente:['estudio','estudias','estudia','estudiamos','estudiáis','estudian'],
+    preterito:['estudié','estudiaste','estudió','estudiamos','estudiasteis','estudiaron'],
+    futuro:['estudiaré','estudiarás','estudiará','estudiaremos','estudiaréis','estudiarán']},
+  {inf:'escuchar', meaning:'zuhören', type:'ar',
+    presente:['escucho','escuchas','escucha','escuchamos','escucháis','escuchan'],
+    preterito:['escuché','escuchaste','escuchó','escuchamos','escuchasteis','escucharon'],
+    futuro:['escucharé','escucharás','escuchará','escucharemos','escucharéis','escucharán']},
+  {inf:'jugar', meaning:'spielen', type:'ar',
+    presente:['juego','juegas','juega','jugamos','jugáis','juegan'],
+    preterito:['jugué','jugaste','jugó','jugamos','jugasteis','jugaron'],
+    futuro:['jugaré','jugarás','jugará','jugaremos','jugaréis','jugarán']},
+  {inf:'llegar', meaning:'ankommen', type:'ar',
+    presente:['llego','llegas','llega','llegamos','llegáis','llegan'],
+    preterito:['llegué','llegaste','llegó','llegamos','llegasteis','llegaron'],
+    futuro:['llegaré','llegarás','llegará','llegaremos','llegaréis','llegarán']},
+  {inf:'llevar', meaning:'tragen, bringen', type:'ar',
+    presente:['llevo','llevas','lleva','llevamos','lleváis','llevan'],
+    preterito:['llevé','llevaste','llevó','llevamos','llevasteis','llevaron'],
+    futuro:['llevaré','llevarás','llevará','llevaremos','llevaréis','llevarán']},
+  {inf:'buscar', meaning:'suchen', type:'ar',
+    presente:['busco','buscas','busca','buscamos','buscáis','buscan'],
+    preterito:['busqué','buscaste','buscó','buscamos','buscasteis','buscaron'],
+    futuro:['buscaré','buscarás','buscará','buscaremos','buscaréis','buscarán']},
+  {inf:'comer', meaning:'essen', type:'er',
+    presente:['como','comes','come','comemos','coméis','comen'],
+    preterito:['comí','comiste','comió','comimos','comisteis','comieron'],
+    futuro:['comeré','comerás','comerá','comeremos','comeréis','comerán']},
+  {inf:'aprender', meaning:'lernen', type:'er',
+    presente:['aprendo','aprendes','aprende','aprendemos','aprendéis','aprenden'],
+    preterito:['aprendí','aprendiste','aprendió','aprendimos','aprendisteis','aprendieron'],
+    futuro:['aprenderé','aprenderás','aprenderá','aprenderemos','aprenderéis','aprenderán']},
+  {inf:'beber', meaning:'trinken', type:'er',
+    presente:['bebo','bebes','bebe','bebemos','bebéis','beben'],
+    preterito:['bebí','bebiste','bebió','bebimos','bebisteis','bebieron'],
+    futuro:['beberé','beberás','beberá','beberemos','beberéis','beberán']},
+  {inf:'leer', meaning:'lesen', type:'er',
+    presente:['leo','lees','lee','leemos','leéis','leen'],
+    preterito:['leí','leíste','leyó','leímos','leísteis','leyeron'],
+    futuro:['leeré','leerás','leerá','leeremos','leeréis','leerán']},
+  {inf:'vivir', meaning:'leben', type:'ir',
+    presente:['vivo','vives','vive','vivimos','vivís','viven'],
+    preterito:['viví','viviste','vivió','vivimos','vivisteis','vivieron'],
+    futuro:['viviré','vivirás','vivirá','viviremos','viviréis','vivirán']},
+  {inf:'escribir', meaning:'schreiben', type:'ir',
+    presente:['escribo','escribes','escribe','escribimos','escribís','escriben'],
+    preterito:['escribí','escribiste','escribió','escribimos','escribisteis','escribieron'],
+    futuro:['escribiré','escribirás','escribirá','escribiremos','escribiréis','escribirán']},
+  {inf:'abrir', meaning:'öffnen', type:'ir',
+    presente:['abro','abres','abre','abrimos','abrís','abren'],
+    preterito:['abrí','abriste','abrió','abrimos','abristeis','abrieron'],
+    futuro:['abriré','abrirás','abrirá','abriremos','abriréis','abrirán']},
+  {inf:'ser', meaning:'sein (dauerhaft)', type:'irr',
+    presente:['soy','eres','es','somos','sois','son'],
+    preterito:['fui','fuiste','fue','fuimos','fuisteis','fueron'],
+    futuro:['seré','serás','será','seremos','seréis','serán']},
+  {inf:'estar', meaning:'sein (Zustand, Ort)', type:'irr',
+    presente:['estoy','estás','está','estamos','estáis','están'],
+    preterito:['estuve','estuviste','estuvo','estuvimos','estuvisteis','estuvieron'],
+    futuro:['estaré','estarás','estará','estaremos','estaréis','estarán']},
+  {inf:'tener', meaning:'haben', type:'irr',
+    presente:['tengo','tienes','tiene','tenemos','tenéis','tienen'],
+    preterito:['tuve','tuviste','tuvo','tuvimos','tuvisteis','tuvieron'],
+    futuro:['tendré','tendrás','tendrá','tendremos','tendréis','tendrán']},
+  {inf:'ir', meaning:'gehen', type:'irr',
+    presente:['voy','vas','va','vamos','vais','van'],
+    preterito:['fui','fuiste','fue','fuimos','fuisteis','fueron'],
+    futuro:['iré','irás','irá','iremos','iréis','irán']},
+  {inf:'hacer', meaning:'machen, tun', type:'irr',
+    presente:['hago','haces','hace','hacemos','hacéis','hacen'],
+    preterito:['hice','hiciste','hizo','hicimos','hicisteis','hicieron'],
+    futuro:['haré','harás','hará','haremos','haréis','harán']},
+  {inf:'poder', meaning:'können', type:'irr',
+    presente:['puedo','puedes','puede','podemos','podéis','pueden'],
+    preterito:['pude','pudiste','pudo','pudimos','pudisteis','pudieron'],
+    futuro:['podré','podrás','podrá','podremos','podréis','podrán']},
+  {inf:'querer', meaning:'wollen', type:'irr',
+    presente:['quiero','quieres','quiere','queremos','queréis','quieren'],
+    preterito:['quise','quisiste','quiso','quisimos','quisisteis','quisieron'],
+    futuro:['querré','querrás','querrá','querremos','querréis','querrán']},
+  {inf:'decir', meaning:'sagen', type:'irr',
+    presente:['digo','dices','dice','decimos','decís','dicen'],
+    preterito:['dije','dijiste','dijo','dijimos','dijisteis','dijeron'],
+    futuro:['diré','dirás','dirá','diremos','diréis','dirán']},
+  {inf:'venir', meaning:'kommen', type:'irr',
+    presente:['vengo','vienes','viene','venimos','venís','vienen'],
+    preterito:['vine','viniste','vino','vinimos','vinisteis','vinieron'],
+    futuro:['vendré','vendrás','vendrá','vendremos','vendréis','vendrán']},
+  {inf:'poner', meaning:'stellen, legen', type:'irr',
+    presente:['pongo','pones','pone','ponemos','ponéis','ponen'],
+    preterito:['puse','pusiste','puso','pusimos','pusisteis','pusieron'],
+    futuro:['pondré','pondrás','pondrá','pondremos','pondréis','pondrán']},
+  {inf:'saber', meaning:'wissen', type:'irr',
+    presente:['sé','sabes','sabe','sabemos','sabéis','saben'],
+    preterito:['supe','supiste','supo','supimos','supisteis','supieron'],
+    futuro:['sabré','sabrás','sabrá','sabremos','sabréis','sabrán']},
+  {inf:'pedir', meaning:'bitten, bestellen', type:'irr',
+    presente:['pido','pides','pide','pedimos','pedís','piden'],
+    preterito:['pedí','pediste','pidió','pedimos','pedisteis','pidieron'],
+    futuro:['pediré','pedirás','pedirá','pediremos','pediréis','pedirán']},
+  {inf:'dormir', meaning:'schlafen', type:'irr',
+    presente:['duermo','duermes','duerme','dormimos','dormís','duermen'],
+    preterito:['dormí','dormiste','durmió','dormimos','dormisteis','durmieron'],
+    futuro:['dormiré','dormirás','dormirá','dormiremos','dormiréis','dormirán']},
+  {inf:'empezar', meaning:'anfangen', type:'irr',
+    presente:['empiezo','empiezas','empieza','empezamos','empezáis','empiezan'],
+    preterito:['empecé','empezaste','empezó','empezamos','empezasteis','empezaron'],
+    futuro:['empezaré','empezarás','empezará','empezaremos','empezaréis','empezarán']},
+  {inf:'pensar', meaning:'denken', type:'irr',
+    presente:['pienso','piensas','piensa','pensamos','pensáis','piensan'],
+    preterito:['pensé','pensaste','pensó','pensamos','pensasteis','pensaron'],
+    futuro:['pensaré','pensarás','pensará','pensaremos','pensaréis','pensarán']},
+  {inf:'volver', meaning:'zurückkehren', type:'irr',
+    presente:['vuelvo','vuelves','vuelve','volvemos','volvéis','vuelven'],
+    preterito:['volví','volviste','volvió','volvimos','volvisteis','volvieron'],
+    futuro:['volveré','volverás','volverá','volveremos','volveréis','volverán']},
+  {inf:'encontrar', meaning:'finden', type:'irr',
+    presente:['encuentro','encuentras','encuentra','encontramos','encontráis','encuentran'],
+    preterito:['encontré','encontraste','encontró','encontramos','encontrasteis','encontraron'],
+    futuro:['encontraré','encontrarás','encontrará','encontraremos','encontraréis','encontrarán']},
+  {inf:'entender', meaning:'verstehen', type:'irr',
+    presente:['entiendo','entiendes','entiende','entendemos','entendéis','entienden'],
+    preterito:['entendí','entendiste','entendió','entendimos','entendisteis','entendieron'],
+    futuro:['entenderé','entenderás','entenderá','entenderemos','entenderéis','entenderán']},
+  {inf:'conocer', meaning:'kennen', type:'irr',
+    presente:['conozco','conoces','conoce','conocemos','conocéis','conocen'],
+    preterito:['conocí','conociste','conoció','conocimos','conocisteis','conocieron'],
+    futuro:['conoceré','conocerás','conocerá','conoceremos','conoceréis','conocerán']},
+  {inf:'traer', meaning:'bringen', type:'irr',
+    presente:['traigo','traes','trae','traemos','traéis','traen'],
+    preterito:['traje','trajiste','trajo','trajimos','trajisteis','trajeron'],
+    futuro:['traeré','traerás','traerá','traeremos','traeréis','traerán']},
+  {inf:'salir', meaning:'weggehen, ausgehen', type:'irr',
+    presente:['salgo','sales','sale','salimos','salís','salen'],
+    preterito:['salí','saliste','salió','salimos','salisteis','salieron'],
+    futuro:['saldré','saldrás','saldrá','saldremos','saldréis','saldrán']},
+];
+
+let activeTenses = {preterito:false, futuro:false};
+let currentVerb = null;
+let currentTab = 'table';
+let quiz = null; // {items:[{tense,personIdx}], idx, score, checked}
+
+function toggleTense(name){
+  activeTenses[name] = !activeTenses[name];
+  const sw = name === 'preterito' ? document.getElementById('pastSwitch') : document.getElementById('futureSwitch');
+  const label = name === 'preterito' ? document.getElementById('pastLabel') : document.getElementById('futureLabel');
+  sw.classList.toggle('on', activeTenses[name]);
+  if(name === 'futuro'){ sw.classList.toggle('future', activeTenses[name]); }
+  label.style.color = activeTenses[name] ? 'var(--cream)' : 'var(--cream-dim)';
+  if(currentVerb){ renderSheetBody(); }
+}
+
+function renderTilewall(){
+  const wall = document.getElementById('tilewall');
+  wall.innerHTML = '';
+  VERBS.forEach((v, i) => {
+    const t = document.createElement('div');
+    t.className = 'tile type-' + v.type;
+    t.onclick = () => openVerb(i);
+    t.innerHTML = `<div class="corner"></div><div class="inf">${v.inf}</div><div class="meaning">${v.meaning}</div>`;
+    wall.appendChild(t);
+  });
+}
+
+function openVerb(i){
+  currentVerb = VERBS[i];
+  currentTab = 'table';
+  document.getElementById('sheetInf').textContent = currentVerb.inf;
+  document.getElementById('sheetMeaning').textContent = currentVerb.meaning + ' · ' + typeLabel(currentVerb.type);
+  document.getElementById('tabTable').classList.add('active');
+  document.getElementById('tabQuiz').classList.remove('active');
+  renderSheetBody();
+  document.getElementById('backdrop').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+
+function typeLabel(t){
+  return t === 'ar' ? '-ar Verb' : t === 'er' ? '-er Verb' : t === 'ir' ? '-ir Verb' : 'unregelmäßig';
+}
+
+function closeSheet(){
+  document.getElementById('backdrop').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');
+  quiz = null;
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tabTable').classList.toggle('active', tab === 'table');
+  document.getElementById('tabQuiz').classList.toggle('active', tab === 'quiz');
+  if(tab === 'quiz'){ startQuiz(); } else { renderSheetBody(); }
+}
+
+function renderSheetBody(){
+  if(currentTab === 'table'){ renderTable(); }
+  else { renderQuiz(); }
+}
+
+function enabledTenseList(){
+  const list = ['presente'];
+  if(activeTenses.preterito) list.push('preterito');
+  if(activeTenses.futuro) list.push('futuro');
+  return list;
+}
+
+function renderTable(){
+  const body = document.getElementById('sheetBody');
+  let html = '';
+  enabledTenseList().forEach(tense => {
+    html += mosaicBlock(TENSE_LABEL[tense], currentVerb[tense]);
+  });
+  body.innerHTML = html;
+}
+
+function mosaicBlock(title, forms){
+  let cells = '';
+  forms.forEach((f, i) => {
+    cells += `<div class="cell"><div class="pron">${PRONOUNS[i]}</div><div class="form">${f}</div></div>`;
+  });
+  return `<div class="tense-block"><div class="tense-title">${title}</div><div class="mosaic">${cells}</div></div>`;
+}
+
+/* --- Quiz --- */
+function startQuiz(){
+  const items = [];
+  enabledTenseList().forEach(tense => {
+    for(let p = 0; p < 6; p++){ items.push({tense, personIdx:p}); }
+  });
+  // shuffle
+  for(let i = items.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  quiz = {items, idx:0, score:0, checked:false};
+  renderQuiz();
+}
+
+function normalize(s){
+  return s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function renderQuiz(){
+  const body = document.getElementById('sheetBody');
+  if(!quiz) { startQuiz(); return; }
+
+  if(quiz.idx >= quiz.items.length){
+    body.innerHTML = `
+      <div class="quiz-summary">
+        <div class="score">${quiz.score} / ${quiz.items.length}</div>
+        <div class="label">richtig konjugiert — ${currentVerb.inf}</div>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="switchTab('table')">Zur Tabelle</button>
+          <button class="btn btn-primary" onclick="startQuiz()">Nochmal testen</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const item = quiz.items[quiz.idx];
+  body.innerHTML = `
+    <div class="quiz-progress"><span>Frage ${quiz.idx + 1} / ${quiz.items.length}</span><span>Punkte: ${quiz.score}</span></div>
+    <div class="quiz-card">
+      <div class="quiz-tense">${TENSE_LABEL[item.tense]}</div>
+      <div class="quiz-prompt"><span class="pron">${PRONOUNS[item.personIdx]}</span> — ${currentVerb.inf}</div>
+      <div class="quiz-input-row">
+        <input type="text" id="quizInput" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Konjugierte Form…">
+        <button class="btn btn-primary" id="quizCheckBtn" onclick="checkQuiz()">Prüfen</button>
+      </div>
+      <div class="feedback" id="quizFeedback"></div>
+      <div class="quiz-actions" id="quizActions"></div>
+    </div>`;
+
+  const input = document.getElementById('quizInput');
+  input.focus();
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      if(!quiz.checked){ checkQuiz(); } else { nextQuiz(); }
+    }
+  });
+}
+
+function checkQuiz(){
+  if(quiz.checked) return;
+  const item = quiz.items[quiz.idx];
+  const correctForm = currentVerb[item.tense][item.personIdx];
+  const input = document.getElementById('quizInput');
+  const userVal = input.value;
+  const exact = userVal.trim() === correctForm;
+  const looseMatch = normalize(userVal) === normalize(correctForm);
+  const feedback = document.getElementById('quizFeedback');
+  quiz.checked = true;
+
+  if(exact){
+    quiz.score++;
+    input.classList.add('correct');
+    feedback.className = 'feedback correct';
+    feedback.innerHTML = '¡Correcto! Richtig.';
+  } else if(looseMatch){
+    quiz.score++;
+    input.classList.add('correct');
+    feedback.className = 'feedback correct';
+    feedback.innerHTML = `Richtig! <span class="note">Kleiner Tipp: korrekt mit Akzent ist „${correctForm}“</span>`;
+  } else {
+    input.classList.add('wrong');
+    feedback.className = 'feedback wrong';
+    feedback.innerHTML = `Nicht ganz — richtig wäre „${correctForm}“`;
+  }
+
+  document.getElementById('quizCheckBtn').style.display = 'none';
+  document.getElementById('quizActions').innerHTML =
+    `<button class="btn btn-primary" onclick="nextQuiz()">${quiz.idx + 1 < quiz.items.length ? 'Weiter' : 'Ergebnis anzeigen'}</button>`;
+}
+
+function nextQuiz(){
+  quiz.idx++;
+  quiz.checked = false;
+  renderQuiz();
+}
+
+renderTilewall();
+</script>
+</body>
+</html>
