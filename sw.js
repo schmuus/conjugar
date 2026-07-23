@@ -1,4 +1,4 @@
-const CACHE_NAME = 'conjugar-v1';
+const CACHE_NAME = 'conjugar-v3';
 const ASSETS = [
   './index.html',
   './manifest.json',
