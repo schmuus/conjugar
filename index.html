@@ -539,20 +539,30 @@ function toggleTense(name){
   if(currentVerb){ renderSheetBody(); }
 }
 
+const TYPE_ORDER = {ar:0, er:1, ir:2, irr:3};
+
+function sortedVerbs(){
+  return [...VERBS].sort((a, b) => {
+    const t = TYPE_ORDER[a.type] - TYPE_ORDER[b.type];
+    if(t !== 0) return t;
+    return a.inf.localeCompare(b.inf, 'es');
+  });
+}
+
 function renderTilewall(){
   const wall = document.getElementById('tilewall');
   wall.innerHTML = '';
-  VERBS.forEach((v, i) => {
+  sortedVerbs().forEach((v) => {
     const t = document.createElement('div');
     t.className = 'tile type-' + v.type;
-    t.onclick = () => openVerb(i);
+    t.onclick = () => openVerb(v);
     t.innerHTML = `<div class="corner"></div><div class="inf">${v.inf}</div><div class="meaning">${v.meaning}</div>`;
     wall.appendChild(t);
   });
 }
 
-function openVerb(i){
-  currentVerb = VERBS[i];
+function openVerb(v){
+  currentVerb = v;
   currentTab = 'table';
   document.getElementById('sheetInf').textContent = currentVerb.inf;
   document.getElementById('sheetMeaning').textContent = currentVerb.meaning + ' · ' + typeLabel(currentVerb.type);
